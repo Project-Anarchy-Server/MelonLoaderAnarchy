@@ -422,10 +422,10 @@ jobs:
           path: MelonLoader.Windows.x64.CI.Release
 
       - name: Zip Linux - Release - x64
-        run: zip -r MelonLoader.Linux.x64.CI.Release.zip MelonLoader.Linux.x64.CI.Release
+        run: cd MelonLoader.Linux.x64.CI.Release && zip -r MelonLoader.Linux.x64.CI.Release.zip * && mv MelonLoader.Linux.x64.CI.Release.zip ../MelonLoader.Linux.x64.CI.Release.zip
 
       - name: Zip Windows - Release - x64
-        run: zip -r MelonLoader.Windows.x64.CI.Release.zip MelonLoader.Windows.x64.CI.Release
+        run: cd MelonLoader.Windows.x64.CI.Release && zip -r MelonLoader.Windows.x64.CI.Release.zip * && mv MelonLoader.Windows.x64.CI.Release.zip ../MelonLoader.Windows.x64.CI.Release.zip
       
       - uses: marvinpinto/action-automatic-releases@latest
         with:
