@@ -413,14 +413,19 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: MelonLoader.Linux.x64.CI.Release
-          path: MelonLoader.Linux.x64.CI.Release.zip
+          path: MelonLoader.Linux.x64.CI.Release
 
       - name: Download Windows - Release - x64
         uses: actions/download-artifact@v4
         with:
           name: MelonLoader.Windows.x64.CI.Release
-          path: MelonLoader.Windows.x64.CI.Release.zip
-      
+          path: MelonLoader.Windows.x64.CI.Release
+
+      - name: Zip Linux - Release - x64
+        run: zip -r MelonLoader.Linux.x64.CI.Release.zip MelonLoader.Linux.x64.CI.Release
+
+      - name: Zip Windows - Release - x64
+        run: zip -r MelonLoader.Windows.x64.CI.Release.zip MelonLoader.Windows.x64.CI.Release
       
       - uses: marvinpinto/action-automatic-releases@latest
         with:
