@@ -432,7 +432,7 @@ jobs:
          repo_token: "${{ secrets.GHUB_TOKEN }}"
          automatic_release_tag: "latest"
          prerelease: false
-         title: "Anarchy Melonloader - ${{ vars.DEVVERSION }}"
+         title: "Anarchy Melonloader - ${{ vars.DEVVERSION }}${{ github.event_name != 'workflow_dispatch' && format('-ci.{0}', github.run_number) || '' }}"
          files: |
            MelonLoader.Windows.x64.CI.Release.zip
            MelonLoader.Linux.x64.CI.Release.zip
