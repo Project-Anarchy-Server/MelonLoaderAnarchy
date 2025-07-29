@@ -36,7 +36,8 @@ namespace MelonLoader.Il2CppAssemblyGenerator
             string gamename = Regex.Replace(InternalUtils.UnityInformationHandler.GameName, "[^a-zA-Z0-9_.]+", "-", RegexOptions.Compiled).ToLowerInvariant();
 
             HostList = new List<HostInfo> {
-                new HostInfo("https://api.shibui.moe/api/1/melonloaderInfo", DefaultHostInfo.Melon.Contact),
+                // new HostInfo("https://api.shibui.moe/api/1/melonloaderInfo", DefaultHostInfo.Melon.Contact),
+                new HostInfo("https://anarchy-api.wolfieog.xyz/api/1/melonloaderInfo", DefaultHostInfo.Melon.Contact),
             };
         }
 
