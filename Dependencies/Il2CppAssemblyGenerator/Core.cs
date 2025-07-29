@@ -1,6 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Net;
+﻿using System.IO;
 using System.Net.Http;
 using MelonLoader.Il2CppAssemblyGenerator.Packages;
 using MelonLoader.Il2CppAssemblyGenerator.Packages.Models;
@@ -36,10 +34,9 @@ namespace MelonLoader.Il2CppAssemblyGenerator
             webClient = new();
             webClient.DefaultRequestHeaders.Add("User-Agent", $"{BuildInfo.Name} v{BuildInfo.Version}");
 
-            AssemblyGenerationNeeded = MelonLaunchOptions.Il2CppAssemblyGenerator.ForceRegeneration;
+            AssemblyGenerationNeeded = LoaderConfig.Current.UnityEngine.ForceRegeneration;
 
             string gameAssemblyName = "GameAssembly";
-            
             if (MelonUtils.IsUnix)
                 gameAssemblyName += ".so"; 
             if (MelonUtils.IsWindows)
@@ -47,17 +44,20 @@ namespace MelonLoader.Il2CppAssemblyGenerator
             if (MelonUtils.IsMac)
                 gameAssemblyName += ".dylib";
 
-                GameAssemblyPath = Path.Combine(MelonEnvironment.GameRootDirectory, gameAssemblyName);
+#if OSX
+            GameAssemblyPath = Path.Combine(MelonEnvironment.GameExecutablePath, "Contents", "Frameworks", gameAssemblyName);
+#else
+            GameAssemblyPath = Path.Combine(MelonEnvironment.GameRootDirectory, gameAssemblyName);
+#endif
             ManagedPath = MelonEnvironment.MelonManagedDirectory;
-
-            BasePath = Path.GetDirectoryName(Assembly.Location);
+            BasePath = MelonEnvironment.Il2CppAssemblyGeneratorDirectory;
         }
 
         private static int Run()
         {
             Config.Initialize();
 
-            if (!MelonLaunchOptions.Il2CppAssemblyGenerator.OfflineMode)
+            if (!LoaderConfig.Current.UnityEngine.ForceOfflineGeneration)
                 RemoteAPI.Contact();
 
             Cpp2IL cpp2IL_netcore = new Cpp2IL();
@@ -66,8 +66,7 @@ namespace MelonLoader.Il2CppAssemblyGenerator
                 cpp2il = new Cpp2IL_NetFramework();
             else
                 cpp2il = cpp2IL_netcore;
-
-            //cpp2il_scrs = new Cpp2IL_StrippedCodeRegSupport(cpp2il);
+            cpp2il_scrs = new Cpp2IL_StrippedCodeRegSupport(cpp2il);
 
             il2cppinterop = new Packages.Il2CppInterop();
             unitydependencies = new UnityDependencies();
@@ -80,7 +79,7 @@ namespace MelonLoader.Il2CppAssemblyGenerator
             Logger.Msg($"Using Deobfuscation Regex = {(string.IsNullOrEmpty(deobfuscationRegex.Regex) ? "null" : deobfuscationRegex.Regex)}");
 
             if (!cpp2il.Setup()
-                //|| !cpp2il_scrs.Setup()
+                || !cpp2il_scrs.Setup()
                 || !il2cppinterop.Setup()
                 || !unitydependencies.Setup()
                 || !deobfuscationMap.Setup())
@@ -94,7 +93,7 @@ namespace MelonLoader.Il2CppAssemblyGenerator
             MelonDebug.Msg($"Current GameAssembly Hash: {CurrentGameAssemblyHash = MelonUtils.ComputeSimpleSHA512Hash(GameAssemblyPath)}");
 
             if (string.IsNullOrEmpty(Config.Values.GameAssemblyHash)
-                    || !Config.Values.GameAssemblyHash.Equals(CurrentGameAssemblyHash))
+                || !Config.Values.GameAssemblyHash.Equals(CurrentGameAssemblyHash))
                 AssemblyGenerationNeeded = true;
 
             if (!AssemblyGenerationNeeded)

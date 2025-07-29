@@ -13,6 +13,14 @@
 	<a href="https://discord.gg/2Wn3N2P"><img src="https://img.shields.io/discord/663449315876012052?label=discord&style=for-the-badge&color=blueviolet"></a>
 </p>
 
+<p align="center">
+	<a href="https://github.com/LavaGang/MelonLoader.Installer/releases/latest/download/MelonLoader.Installer.exe"><img src="https://img.shields.io/github/downloads/LavaGang/MelonLoader.Installer/latest/MelonLoader.Installer.exe?style=for-the-badge&label=Windows%20Installer"></a>
+</p>
+
+<p align="center">
+	<a href="https://github.com/LavaGang/MelonLoader.Installer/releases/latest/download/MelonLoader.Installer.Linux"><img src="https://img.shields.io/github/downloads/LavaGang/MelonLoader.Installer/latest/MelonLoader.Installer.Linux?style=for-the-badge&label=Linux%20Installer"></a>
+</p>
+
 ---
 
 ## GENERAL INFORMATION:
@@ -64,11 +72,9 @@ Use it to help Develop and Debug MelonLoader, Plugins, and Mods.
 
 ## REQUIREMENTS:
 
-- [.NET Framework 3.5 Runtime](https://www.microsoft.com/en-us/download/details.aspx?id=21)
-- [.NET Framework 4.7.2 Runtime](https://dotnet.microsoft.com/download/dotnet-framework/net472)
-- [.NET Framework 4.8 Runtime](https://dotnet.microsoft.com/download/dotnet-framework/net48)
+### Il2Cpp Games:
 - [.NET 6.0 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0#runtime-6.0.15)
-- Microsoft Visual C++ 2015-2019 Re-distributable [[x86](https://aka.ms/vs/16/release/vc_redist.x86.exe)] [[x64](https://aka.ms/vs/16/release/vc_redist.x64.exe)]
+> On Windows, the .NET 6.0 Desktop Runtime will be installed automatically
 
 ---
 
@@ -105,7 +111,7 @@ Use it to help Develop and Debug MelonLoader, Plugins, and Mods.
 ### UN-INSTALL:
 
 1. Make sure the Game is Closed and Not Running before attempting to UN-INSTALL.
-2. Remove the version.dll & dobby.dll files from the Game's Installation Folder.
+2. Remove the version.dll file from the Game's Installation Folder.
 3. Remove the MelonLoader folder from the Game's Installation Folder.
 
 These additional steps below are OPTIONAL if you want to do a FULL UN-INSTALL.
@@ -116,29 +122,70 @@ These additional steps below are OPTIONAL if you want to do a FULL UN-INSTALL.
 
 ---
 
-## START SCREEN CUSTOMIZATION:
+## CONFIG:
 
-- After Initial Launch the Start Screen will create a folder under `UserData/MelonStartScreen`
-- Inside this folder it will create a `Themes` folder and a `Config.cfg` file for Customization Settings.
-- You can also place Custom Themes in the created `Themes` folder.
-- Inside `Config.cfg` you can set what Theme folder you would like to use.  
-- If you set your Theme folder to `Random` it will randomly pick and load from existing Themes.  
+MelonLoader has its own config file at `./UserData/Loader.cfg` (you need to run MelonLoader at least once for it to appear).
 
-- For Custom Themes you can place Custom Images in their Theme folder to further customize it.
-- Listed below are the Compatible File Names and Extensions for the Custom Images.
+Here is a list of the current config options (and their default values):
+```toml
+[loader]
+# Disables MelonLoader. Equivalent to the '--no-mods' launch option
+disable = false
+# Equivalent to the '--melonloader.debug' launch option
+debug_mode = true
+# Capture all Unity player logs into MelonLoader's logs even if the game disabled them. NOTE: Depending on the game or Unity version, these logs can be overly verbose. Equivalent to the '--melonloader.captureplayerlogs' launch option
+capture_player_logs = true
+# The maximum Harmony log verbosity to capture into MelonLoader's logs. Possible values in verbosity order are: "None", "Error", "Warn", "Info", "Debug", or "IL". Equivalent to the '--melonloader.harmonyloglevel' launch option
+harmony_log_level = "Warn"
+# Only use this if the game freezes when trying to quit. Equivalent to the '--quitfix' launch option
+force_quit = false
+# Disables the start screen. Equivalent to the '--melonloader.disablestartscreen' launch option
+disable_start_screen = false
+# Starts the dotnet debugger on Windows and wait it is attached or just wait until one is attached without launch on other OSes (only for Il2Cpp games). Equivalent to the '--melonloader.launchdebugger' launch option
+launch_debugger = false
+# Sets the loader theme. Currently, the only available themes are "Normal" and "Lemon". Equivalent to the '--melonloader.consolemode' launch option (0 for Normal, 4 for Lemon)
+theme = "Normal"
 
-| Compatible File Names |
-| - |
-| Background |
-| Loading |
-| Logo |
+[console]
+# Hides warnings from displaying. Equivalent to the '--melonloader.hidewarnings' launch option
+hide_warnings = false
+# Hides the console. Equivalent to the '--melonloader.hideconsole' launch option
+hide_console = false
+# Forces the console to always stay on-top of all other applications. Equivalent to the '--melonloader.consoleontop' launch option
+console_on_top = false
+# Keeps the console title as original. Equivalent to the '--melonloader.consoledst' launch option
+dont_set_title = false
 
-| Compatible Extensions |
-| - |
-| .gif |
-| .png |
-| .jpg |
-| .jpeg |
+[logs]
+# Sets the maximum amount of log files in the Logs folder (Default: 10). Equivalent to the '--melonloader.maxlogs' launch option
+max_logs = 10
+
+[mono_debug_server]
+# Let the Mono debug server wait until a debugger is attached when debug_mode is true (only for Mono games). Equivalent to the '--melonloader.debugsuspend' launch option
+debug_suspend = false
+# The IP address the Mono debug server will listen to when debug_mode is true (only for Mono games). Equivalent to the '--melonloader.debugipaddress' launch option
+debug_ip_address = "127.0.0.1"
+# The port the Mono debug server will listen to when debug_mode is true (only for Mono games). Equivalent to the '--melonloader.debugport' launch option
+debug_port = 55555
+
+[unityengine]
+# Overrides the detected UnityEngine version. Equivalent to the '--melonloader.unityversion' launch option
+version_override = ""
+# Disables the console log cleaner (only applies to Il2Cpp games). Equivalent to the '--melonloader.disableunityclc' launch option
+disable_console_log_cleaner = false
+# Forces the Il2Cpp Assembly Generator to run without contacting the remote API. Equivalent to the '--melonloader.agfoffline' launch option
+force_offline_generation = false
+# Forces the Il2Cpp Assembly Generator to use the specified regex. Equivalent to the '--melonloader.agfregex' launch option
+force_generator_regex = ""
+# Forces the Il2Cpp Assembly Generator to use the specified Il2Cpp dumper version. Equivalent to the '--melonloader.agfvdumper' launch option
+force_il2cpp_dumper_version = ""
+# Forces the Il2Cpp Assembly Generator to always regenerate assemblies. Equivalent to the '--melonloader.agfregenerate' launch option
+force_regeneration = false
+# Enables the CallAnalyzer processor for Cpp2IL. Equivalent to the '--cpp2il.callanalyzer' launch option
+enable_cpp2il_call_analyzer = false
+# Enables the NativeMethodDetector processor for Cpp2IL. Equivalent to the '--cpp2il.nativemethoddetector' launch option
+enable_cpp2il_native_method_detector = false
+```
 
 ---
 
@@ -157,6 +204,11 @@ These additional steps below are OPTIONAL if you want to do a FULL UN-INSTALL.
 | --melonloader.hideconsole | Hides the Console |
 | --melonloader.hidewarnings | Hides Warnings from Displaying |
 | --melonloader.debug | Debug Mode |
+| --melonloader.captureplayerlogs | Capture all Unity player logs into MelonLoader's logs even if the game disabled them. NOTE: Depending on the game or Unity version, these logs can be overly verbose |
+| --melonloader.harmonyloglevel | The maximum Harmony log verbosity to capture into MelonLoader's logs. Possible values in verbosity order are: "None", "Error", "Warn", "Info", "Debug", or "IL" |
+| --melonloader.debugsuspend | Let the Mono debug server wait until a debugger is attached when in Debug Mode (only for Mono games) |
+| --melonloader.debugipaddress | The IP address the Mono debug server will listen to when in Debug Mode (only for Mono games) |
+| --melonloader.debugport | The port the Mono debug server will listen to when in Debug Mode (only for Mono games)       |
 | --melonloader.maxlogs | Max Log Files [ Default: 10 ] [ NoCap: 0 ] |
 | --melonloader.loadmodeplugins | Load Mode for Plugins [ Default: 0 ] |
 | --melonloader.loadmodemods | Load Mode for Mods [ Default: 0 ] |
@@ -174,6 +226,7 @@ These additional steps below are OPTIONAL if you want to do a FULL UN-INSTALL.
 | --melonloader.agfregex | Forces Assembly Generator to use a Specified Regex |
 | --melonloader.agfvdumper | Forces Assembly Generator to use a Specified Version of Dumper |
 | --melonloader.disableunityclc | Disable Unity Console Log Cleaner |
+| --melonloader.monosearchpathoverride | A list of paths that Mono will prioritise to seek mscorlib and core libraries before the Managed folder and Melon's included set of core libraries. The list is separated by semicolons (;) on Windows and by colons (:) on Linux |
 
 
 - These ones below are Cpp2IL specific Launch Options.
@@ -185,34 +238,9 @@ These additional steps below are OPTIONAL if you want to do a FULL UN-INSTALL.
 
 ---
 
-## LOAD MODES:
-
-- Load Mode Launch Options are a way to dictate how you want Mods or Plugins to Load.
-- Below is the Compatible Values and what each of them do.
-
-| Value | Action |
-| - | - |
-| 0 | Load Only if the File doesn't have the ".dev.dll" Extension |
-| 1 | Load Only if the File has the ".dev.dll" Extension |
-| 2 | Load All |
-
----
-
-## CONSOLE DISPLAY MODES:
-
-- Console Display Modes are built in Themes for the Console
-- Below is the Compatible Values and what each of them do.
-
-| Value | Mode |
-| - | - |
-| 0 | Normal |
-| 1 | Magenta |
-| 2 | Rainbow |
-| 3 | Random Rainbow |
-
----
-
 ## PROXIES:
+
+MelonLoader uses a proxy DLL to trick the game into loading itself on startup. This only applies for Windows.
 
 - The Proxy DLL is able to be Renamed to the Compatible File Names below.
 - By Default the Proxy is named as "version.dll".
@@ -224,6 +252,16 @@ These additional steps below are OPTIONAL if you want to do a FULL UN-INSTALL.
 | version.dll |
 | winhttp.dll |
 | winmm.dll |
+| dinput.dll |
+| dinput8.dll |
+| dsound.dll |
+| d3d8.dll |
+| d3d9.dll |
+| d3d10.dll |
+| d3d11.dll |
+| d3d12.dll |
+| ddraw.dll |
+| msacm32.dll |
 
 ---
 
@@ -233,9 +271,7 @@ MelonLoader is licensed under the Apache License, Version 2.0. See [LICENSE](htt
 
 Third-party Libraries used as Source Code and/or bundled in Binary Form:
 - [Dobby](https://github.com/jmpews/Dobby) is licensed under the Apache License, Version 2.0. See [LICENSE](https://github.com/jmpews/Dobby/blob/master/LICENSE) for the full License.
-- [dobby-rs](https://github.com/RinLovesYou/dobby-rs) is licensed under the Apache License, Version 2.0. See [LICENSE](https://github.com/RinLovesYou/dobby-rs/blob/master/LICENSE) for the full License.
-- [dobby-sys](https://github.com/RinLovesYou/dobby-sys) is licensed under the Apache License, Version 2.0. See [LICENSE](https://github.com/RinLovesYou/dobby-sys/blob/master/LICENSE) for the full License.
-- [unity-rs](https://github.com/RinLovesYou/unity-rs) is licensed under the Apache License, Version 2.0. See [LICENSE](https://github.com/RinLovesYou/unity-rs/blob/master/LICENSE.txt) for the full License.
+- [plthook](https://github.com/kubo/plthook) is licensed under the 2-Clause BSD License. See [LICENSE](https://github.com/kubo/plthook/blob/master/plthook.h) text at the top of the file for the full License.
 - [Mono](https://github.com/Unity-Technologies/mono) is licensed under multiple licenses. See [LICENSE](https://github.com/Unity-Technologies/mono/blob/unity-master/LICENSE) for full details.
 - [HarmonyX](https://github.com/BepInEx/HarmonyX) is licensed under the MIT License. See [LICENSE](https://github.com/BepInEx/HarmonyX/blob/master/LICENSE) for the full License.
 - [MonoMod](https://github.com/MonoMod/MonoMod) is licensed under the MIT License. See [LICENSE](https://github.com/MonoMod/MonoMod/blob/master/LICENSE) for the full License.
@@ -246,8 +282,6 @@ Third-party Libraries used as Source Code and/or bundled in Binary Form:
 - [AsmResolver](https://github.com/Washi1337/AsmResolver) is licensed under the MIT License. See [LICENSE](https://github.com/Washi1337/AsmResolver/blob/master/LICENSE.md) for the full License.
 - [SharpZipLib](https://github.com/icsharpcode/SharpZipLib) is licensed under the MIT License. See [LICENSE](https://github.com/LavaGang/MelonLoader/blob/master/MelonLoader/SharpZipLib/LICENSE.txt) for the full License.
 - [Semver](https://github.com/maxhauser/semver) is licensed under the MIT License. See [LICENSE](https://github.com/maxhauser/semver/blob/master/License.txt) for the full License.
-- [UnityEngine.Il2CppAssetBundleManager](https://github.com/LavaGang/UnityEngine.Il2CppAssetBundleManager) is licensed under the Apache License, Version 2.0. See [LICENSE](https://github.com/LavaGang/UnityEngine.Il2CppAssetBundleManager/blob/master/LICENSE.md) for the full License.
-- [UnityEngine.Il2CppImageConversionManager](https://github.com/LavaGang/UnityEngine.Il2CppImageConversionManager) is licensed under the Apache License, Version 2.0. See [LICENSE](https://github.com/LavaGang/UnityEngine.Il2CppImageConversionManager/blob/master/LICENSE.md) for the full License.
 - [Illusion Plugin Architecture](https://github.com/Eusth/IPA) is licensed under the MIT License. See [LICENSE](https://github.com/Eusth/IPA/blob/master/LICENSE) for the full License.
 - [MuseDashModLoader](https://github.com/mo10/MuseDashModLoader) is licensed under the MIT License. See [LICENSE](https://github.com/mo10/MuseDashModLoader/blob/master/LICENSE) for the full License.
 - [mgGif](https://github.com/gwaredd/mgGif) is licensed under the MIT License. See [LICENSE](https://github.com/gwaredd/mgGif/blob/main/LICENSE) for the full License.
@@ -260,12 +294,12 @@ Third-party Libraries used as Source Code and/or bundled in Binary Form:
 - [WebSocketDotNet](https://github.com/SamboyCoding/WebSocketDotNet) is licensed under the MIT License. See [LICENSE](https://github.com/SamboyCoding/WebSocketDotNet/blob/master/LICENSE) for the full License.
 - [Pastel](https://github.com/silkfire/Pastel) is licensed under the MIT License. See [LICENSE](https://github.com/silkfire/Pastel/blob/master/LICENSE) for the full License.
 - [Il2CppInterop](https://github.com/BepInEx/Il2CppInterop) is licensed under the LGPLv3 License. See [LICENSE](https://github.com/BepInEx/Il2CppInterop/blob/master/LICENSE) for the full License.
- 
- 
+
 External Libraries and Tools that are downloaded and used at Runtime:
 - [Cpp2IL](https://github.com/SamboyCoding/Cpp2IL) is licensed under the MIT License. See [LICENSE](https://github.com/SamboyCoding/Cpp2IL/blob/master/LICENSE) for the full License.
-- Unity Runtime Libraries from [Unity-Runtime-Libraries](https://github.com/LavaGang/Unity-Runtime-Libraries) are part of Unity Software.  
+- Unity Runtime Libraries from [MelonLoader.UnityDependencies](https://github.com/LavaGang/MelonLoader.UnityDependencies) are part of Unity Software.  
 Their usage is subject to [Unity Terms of Service](https://unity3d.com/legal/terms-of-service), including [Unity Software Additional Terms](https://unity3d.com/legal/terms-of-service/software).
+- [.NET Runtime](https://github.com/dotnet/runtime) is licensed under the MIT License. See [LICENSE](https://github.com/dotnet/runtime/blob/main/LICENSE.TXT) for the full License.
 
 See [MelonLoader Wiki](https://melonwiki.xyz/#/credits) for the full Credits.
 

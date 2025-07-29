@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
+using MelonLoader.Logging;
 using Mono.Cecil;
+using MonoMod.Utils;
 
 namespace MelonLoader.Melons
 {
@@ -16,7 +17,7 @@ namespace MelonLoader.Melons
             // Find All Assemblies
             Dictionary<string, (Version, string)> foundAssemblies = new();
             foreach (string path in directoryPaths)
-                PreprocessFolder(path, isMelon, ref foundAssemblies);
+                PreprocessFolder(path, ref foundAssemblies, isMelon);
 
             // Load from File Paths
             foreach (var foundFile in foundAssemblies)
@@ -25,7 +26,7 @@ namespace MelonLoader.Melons
                 if (!hasWroteLine)
                 {
                     hasWroteLine = true;
-                    MelonLogger.WriteLine(Color.Magenta);
+                    MelonLogger.WriteLine(ColorARGB.Magenta);
                 }
 
                 // Load Assembly
@@ -40,8 +41,8 @@ namespace MelonLoader.Melons
         }
 
         private static void PreprocessFolder(string path,
-            bool isMelon,
-            ref Dictionary<string, (Version, string)> foundAssemblies)
+            ref Dictionary<string, (Version, string)> foundAssemblies,
+            bool isMelon)
         {
             // Validate Path
             if (!Directory.Exists(path))
@@ -58,6 +59,8 @@ namespace MelonLoader.Melons
                 // Load Definition using Cecil
                 AssemblyDefinition asmDef = LoadDefinition(f);
                 if (asmDef == null)
+                    continue;
+                if (isMelon && !asmDef.HasCustomAttribute(typeof(MelonInfoAttribute).FullName))
                     continue;
 
                 // Pull Name and Version from AssemblyDefinitionName

@@ -11,10 +11,9 @@ using Il2CppInterop.Common;
 using Microsoft.Extensions.Logging;
 using MelonLoader.Utils;
 using System.IO;
+using MelonLoader.InternalUtils;
 
 [assembly: MelonLoader.PatchShield]
-
-#pragma warning disable CS0618 // Type or member is obsolete
 
 namespace MelonLoader.Support
 {
@@ -42,6 +41,11 @@ namespace MelonLoader.Support
             }
 
             UnityMappers.RegisterMappers();
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                System.Runtime.InteropServices.NativeLibrary.SetDllImportResolver(typeof(Il2CppInteropRuntime).Assembly,
+                    MacOsIl2CppInteropLibraryResolver);
+            }
 
             Il2CppInteropRuntime runtime = Il2CppInteropRuntime.Create(new()
             {
@@ -53,14 +57,13 @@ namespace MelonLoader.Support
             }).AddLogger(new InteropLogger())
               .AddHarmonySupport();
 
-            if (MelonLaunchOptions.Console.CleanUnityLogs)
+            if (!LoaderConfig.Current.UnityEngine.DisableConsoleLogCleaner)
                 ConsoleCleaner();
 
             SceneHandler.Init();
 
             MonoEnumeratorWrapper.Register();
 
-            ClassInjector.RegisterTypeInIl2Cpp<SM_Component>();
             SM_Component.Create();
 
             Interop = new InteropInterface();
@@ -68,6 +71,16 @@ namespace MelonLoader.Support
             runtime.Start();
 
             return new SupportModule_To();
+        }
+
+        private static IntPtr MacOsIl2CppInteropLibraryResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)
+        {
+            if (libraryName == "GameAssembly")
+            {
+                string gameAssemblyPath = Path.Combine(MelonEnvironment.GameExecutablePath, "Contents", "Frameworks", $"{libraryName}.dylib");
+                return System.Runtime.InteropServices.NativeLibrary.Load(gameAssemblyPath);
+            }
+            return IntPtr.Zero;
         }
 
         private static void ConsoleCleaner()
@@ -99,13 +112,37 @@ namespace MelonLoader.Support
                 if (streamWriterType == null)
                     throw new Exception("Unable to Find Type Il2CppSystem.IO.StreamWriter!");
 
-                ConstructorInfo streamWriterCtor = streamWriterType.GetConstructor(new[] { streamType });
-                if (streamWriterCtor == null)
-                    throw new Exception("Unable to Find Constructor of Type Il2CppSystem.IO.StreamWriter!");
+                object nullStreamWriter = null;
+                ConstructorInfo[] constructors = streamWriterType.GetConstructors();
+                foreach (var ctor in constructors)
+                {
+                    ParameterInfo[] parameters = ctor.GetParameters();
+                    if (parameters.Length == 1 && parameters[0].ParameterType == streamType)
+                    {
+                        nullStreamWriter = ctor.Invoke(new[] { nullStream });
+                        break;
+                    }
+                    else if (parameters.Length == 4 && parameters[0].ParameterType == streamType)
+                    {
+                        Type encodingType = Il2Cppmscorlib.GetType("Il2CppSystem.Text.Encoding");
+                        if (encodingType == null)
+                            throw new Exception("Unable to Find Type Il2CppSystem.Text.Encoding!");
 
-                object nullStreamWriter = streamWriterCtor.Invoke(new[] { nullStream });
+                        MethodInfo getUtf8Method = encodingType.GetProperty("UTF8", BindingFlags.Static | BindingFlags.Public)?.GetGetMethod();
+                        if (getUtf8Method == null)
+                            throw new Exception("Unable to Find Method Il2CppSystem.Text.Encoding.get_UTF8!");
+
+                        object utf8Encoding = getUtf8Method.Invoke(null, null);
+                        if (utf8Encoding == null)
+                            throw new Exception("Unable to Get Value of Il2CppSystem.Text.Encoding.UTF8!");
+
+                        nullStreamWriter = ctor.Invoke(new[] { nullStream, utf8Encoding, 1024, false });
+                        break;
+                    }
+                }
+
                 if (nullStreamWriter == null)
-                    throw new Exception("Unable to Invoke Constructor of Type Il2CppSystem.IO.StreamWriter!");
+                    throw new Exception("Unable to Find Suitable Constructor of Type Il2CppSystem.IO.StreamWriter!");
 
                 Type consoleType = Il2Cppmscorlib.GetType("Il2CppSystem.Console");
                 if (consoleType == null)
@@ -162,7 +199,7 @@ namespace MelonLoader.Support
                 
                 var addr = _detourFrom;
                 nint addrPtr = (nint)(&addr);
-                MelonUtils.NativeHookAttachDirect(addrPtr, _targetPtr);
+                BootstrapInterop.NativeHookAttachDirect(addrPtr, _targetPtr);
                 NativeStackWalk.RegisterHookAddr((ulong)addrPtr, $"Il2CppInterop detour of 0x{addrPtr:X} -> 0x{_targetPtr:X}");
 
                 _originalPtr = addr;
@@ -176,7 +213,7 @@ namespace MelonLoader.Support
                 var addr = _detourFrom;
                 nint addrPtr = (nint)(&addr);
 
-                MelonUtils.NativeHookDetach(addrPtr, _targetPtr);
+                BootstrapInterop.NativeHookDetach(addrPtr, _targetPtr);
                 NativeStackWalk.UnregisterHookAddr((ulong)addrPtr);
 
                 _targetPtr = IntPtr.Zero;

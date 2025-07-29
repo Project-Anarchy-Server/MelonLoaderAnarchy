@@ -4,10 +4,11 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using MelonLoader.Logging;
+
 #pragma warning disable 0618
 
 namespace MelonLoader
@@ -37,7 +38,7 @@ namespace MelonLoader
         /// <summary>
         /// Creates a new Melon instance for a Wrapper.
         /// </summary>
-        public static T CreateWrapper<T>(string name, string author, string version, MelonGameAttribute[] games = null, MelonProcessAttribute[] processes = null, int priority = 0, Color? color = null, Color? authorColor = null, string id = null) where T : MelonBase, new()
+        public static T CreateWrapper<T>(string name, string author, string version, MelonGameAttribute[] games = null, MelonProcessAttribute[] processes = null, int priority = 0, ColorARGB? color = null, ColorARGB? authorColor = null, string id = null) where T : MelonBase, new()
         {
             var melon = new T
             {
@@ -100,12 +101,12 @@ namespace MelonLoader
         /// <summary>
         /// Console Color of the Melon.
         /// </summary>
-        public Color ConsoleColor { get; internal set; }
+        public ColorARGB ConsoleColor { get; internal set; }
 
         /// <summary>
         /// Console Color of the Author that made this melon.
         /// </summary>
-        public Color AuthorConsoleColor { get; internal set; }
+        public ColorARGB AuthorConsoleColor { get; internal set; }
 
         /// <summary>
         /// Info Attribute of the Melon.
@@ -311,7 +312,7 @@ namespace MelonLoader
 
         public Incompatibility[] FindIncompatiblitiesFromContext()
         {
-            return FindIncompatiblities(MelonUtils.CurrentGameAttribute, Process.GetCurrentProcess().ProcessName, MelonUtils.GameVersion, BuildInfo.VersionNumber, MelonUtils.HashCode, MelonUtils.CurrentPlatform, MelonUtils.CurrentDomain);
+            return FindIncompatiblities(MelonUtils.CurrentGameAttribute, Process.GetCurrentProcess().ProcessName, UnityInformationHandler.GameVersion, BuildInfo.VersionNumber, MelonUtils.HashCode, MelonUtils.CurrentPlatform, MelonUtils.CurrentDomain);
         }
 
         public static void PrintIncompatibilities(Incompatibility[] incompatibilities, MelonBase melon)
@@ -319,8 +320,8 @@ namespace MelonLoader
             if (incompatibilities == null || incompatibilities.Length == 0)
                 return;
 
-            MelonLogger.WriteLine(Color.Red);
-            MelonLogger.MsgDirect(Color.DarkRed, $"'{melon.Info.Name} v{melon.Info.Version}' is incompatible:");
+            MelonLogger.WriteLine(ColorARGB.Red);
+            MelonLogger.MsgDirect(ColorARGB.DarkRed, $"'{melon.Info.Name} v{melon.Info.Version}' is incompatible:");
             if (incompatibilities.Contains(Incompatibility.Game))
             {
                 MelonLogger.MsgDirect($"- {melon.Info.Name} is only compatible with the following Games:");
@@ -365,7 +366,7 @@ namespace MelonLoader
                 MelonLogger.MsgDirect($"    - {melon.SupportedMLBuild.HashCode}");
             }
 
-            MelonLogger.WriteLine(Color.Red);
+            MelonLogger.WriteLine(ColorARGB.Red);
             MelonLogger.WriteSpacer();
         }
 
@@ -379,7 +380,7 @@ namespace MelonLoader
 
             if (FindMelon(Info.Name, Info.Author) != null)
             {
-                MelonLogger.Warning($"Failed to register {MelonTypeName} '{Location}': A Melon with the same Name and Author is already registered!");
+                MelonLogger.Warning($"Failed to register {MelonTypeName} '{MelonAssembly.Location}': A Melon with the same Name and Author is already registered!");
                 return false;
             }
 
@@ -393,7 +394,7 @@ namespace MelonLoader
             OnMelonInitializing.Invoke(this);
 
             LoggerInstance ??= new MelonLogger.Instance(string.IsNullOrEmpty(ID) ? Info.Name : $"{ID}:{Info.Name}", ConsoleColor);
-            HarmonyInstance ??= new HarmonyLib.Harmony($"{Assembly.FullName}:{Info.Name}");
+            HarmonyInstance ??= new HarmonyLib.Harmony($"{MelonAssembly.Assembly.FullName}:{Info.Name}");
 
             Registered = true; // this has to be true before the melon can subscribe to any events
             RegisterCallbacks();
@@ -404,7 +405,7 @@ namespace MelonLoader
             }
             catch (Exception ex)
             {
-                MelonLogger.Error($"Failed to register {MelonTypeName} '{Location}': Melon failed to initialize!");
+                MelonLogger.Error($"Failed to register {MelonTypeName} '{MelonAssembly.Location}': Melon failed to initialize!");
                 MelonLogger.Error(ex.ToString());
                 Registered = false;
                 return false;
@@ -465,16 +466,34 @@ namespace MelonLoader
             MelonEvents.OnLateUpdate.Subscribe(OnLateUpdate, Priority);
             MelonEvents.OnGUI.Subscribe(OnGUI, Priority);
             MelonEvents.OnFixedUpdate.Subscribe(OnFixedUpdate, Priority);
-            MelonEvents.OnApplicationLateStart.Subscribe(OnApplicationLateStart, Priority);
+
+#pragma warning disable CS0612 // Type or member is obsolete
+            RegisterObsoleteCallbacks();
+#pragma warning restore CS0612 // Type or member is obsolete
 
             MelonPreferences.OnPreferencesLoaded.Subscribe(PrefsLoaded, Priority);
             MelonPreferences.OnPreferencesSaved.Subscribe(PrefsSaved, Priority);
+        }
+
+        [Obsolete]
+        private void RegisterObsoleteCallbacks()
+        {
+            MelonEvents.OnApplicationLateStart.Subscribe(OnApplicationLateStart, Priority);
         }
 
         private void PrefsSaved(string path)
         {
             OnPreferencesSaved(path);
             OnPreferencesSaved();
+
+#pragma warning disable CS0612 // Type or member is obsolete
+            PrefsSavedObsoleteCallback();
+#pragma warning restore CS0612 // Type or member is obsolete
+        }
+
+        [Obsolete]
+        private void PrefsSavedObsoleteCallback()
+        {
             OnModSettingsApplied();
         }
 
@@ -515,7 +534,7 @@ namespace MelonLoader
             }
             catch (Exception ex)
             {
-                MelonLogger.Error($"Failed to properly unregister {MelonTypeName} '{Location}': Melon failed to deinitialize!");
+                MelonLogger.Error($"Failed to properly unregister {MelonTypeName} '{MelonAssembly.Location}': Melon failed to deinitialize!");
                 MelonLogger.Error(ex.ToString());
             }
 
@@ -534,20 +553,20 @@ namespace MelonLoader
 
         private void PrintLoadInfo()
         {
-            MelonLogger.WriteLine(Color.DarkGreen);
+            MelonLogger.WriteLine(ColorARGB.DarkGreen);
             
-            MelonLogger.Internal_PrintModName(ConsoleColor, AuthorConsoleColor, Info.Name, Info.Author, AdditionalCredits?.Credits, Info.Version, ID);
-            MelonLogger.MsgDirect(Color.DarkGray, $"Assembly: {Path.GetFileName(MelonAssembly.Location)}");
+            MelonLogger.PrintModName(ConsoleColor, AuthorConsoleColor, Info.Name, Info.Author, AdditionalCredits?.Credits, Info.Version, ID);
+            MelonLogger.MsgDirect(ColorARGB.DarkGray, $"Assembly: {Path.GetFileName(MelonAssembly.Location)}");
 
-            MelonLogger.WriteLine(Color.DarkGreen);
+            MelonLogger.WriteLine(ColorARGB.DarkGreen);
         }
 
         private void PrintUnloadInfo(string reason)
         {
-            MelonLogger.WriteLine(Color.DarkRed);
+            MelonLogger.WriteLine(ColorARGB.DarkRed);
 
-            MelonLogger.MsgDirect(Color.DarkGray, MelonTypeName + " deinitialized:");
-            MelonLogger.Internal_PrintModName(ConsoleColor, AuthorConsoleColor, Info.Name, Info.Author, AdditionalCredits?.Credits, Info.Version, ID);
+            MelonLogger.MsgDirect(ColorARGB.DarkGray, MelonTypeName + " deinitialized:");
+            MelonLogger.PrintModName(ConsoleColor, AuthorConsoleColor, Info.Name, Info.Author, AdditionalCredits?.Credits, Info.Version, ID);
 
             if (!string.IsNullOrEmpty(reason))
             {
@@ -555,7 +574,7 @@ namespace MelonLoader
                 MelonLogger.MsgDirect($"Reason: '{reason}'");
             }
 
-            MelonLogger.WriteLine(Color.DarkRed);
+            MelonLogger.WriteLine(ColorARGB.DarkRed);
         }
 
         public static void ExecuteAll(LemonAction<MelonBase> func, bool unregisterOnFail = false, string unregistrationReason = null)
@@ -617,35 +636,36 @@ namespace MelonLoader
 
         #region Obsolete Members
 
+        [Obsolete]
         private Harmony.HarmonyInstance _OldHarmonyInstance;
 
-        [Obsolete("Please use either the OnLateInitializeMelon callback, or the 'MelonEvents::OnApplicationLateStart' event instead.")]
+        [Obsolete("Please use either the OnLateInitializeMelon callback, or the 'MelonEvents::OnApplicationLateStart' event instead. This will be removed in a future update.", true)]
         public virtual void OnApplicationLateStart() { }
 
-        [Obsolete("For mods, use OnInitializeMelon instead. For plugins, use OnPreModsLoaded instead.")]
+        [Obsolete("For mods, use OnInitializeMelon instead. For plugins, use OnPreModsLoaded instead. This will be removed in a future update.", true)]
         public virtual void OnApplicationStart() { }
 
-        [Obsolete("Please use OnPreferencesSaved instead.")]
+        [Obsolete("Please use OnPreferencesSaved instead. This will be removed in a future update.", true)]
         public virtual void OnModSettingsApplied() { }
 
-        [Obsolete("Please use HarmonyInstance instead.")]
+        [Obsolete("Please use HarmonyInstance instead. This will be removed in a future update.", true)]
 #pragma warning disable IDE1006 // Naming Styles
         public Harmony.HarmonyInstance harmonyInstance { get { _OldHarmonyInstance ??= new Harmony.HarmonyInstance(HarmonyInstance.Id); return _OldHarmonyInstance; } }
 #pragma warning restore IDE1006 // Naming Styles
 
-        [Obsolete("Please use HarmonyInstance instead.")]
+        [Obsolete("Please use HarmonyInstance instead. This will be removed in a future update.", true)]
         public Harmony.HarmonyInstance Harmony { get { _OldHarmonyInstance ??= new Harmony.HarmonyInstance(HarmonyInstance.Id); return _OldHarmonyInstance; } }
 
-        [Obsolete("Please use MelonAssembly.Assembly instead.")]
+        [Obsolete("Please use MelonAssembly.Assembly instead. This will be removed in a future update.", true)]
         public Assembly Assembly => MelonAssembly.Assembly;
 
-        [Obsolete("Please use MelonAssembly.HarmonyDontPatchAll instead.")]
+        [Obsolete("Please use MelonAssembly.HarmonyDontPatchAll instead. This will be removed in a future update.", true)]
         public bool HarmonyDontPatchAll => MelonAssembly.HarmonyDontPatchAll;
 
-        [Obsolete("Please use MelonAssembly.Hash instead.")]
+        [Obsolete("Please use MelonAssembly.Hash instead. This will be removed in a future update.", true)]
         public string Hash => MelonAssembly.Hash;
 
-        [Obsolete("Please use MelonAssembly.Location instead.")]
+        [Obsolete("Please use MelonAssembly.Location instead. This will be removed in a future update.", true)]
         public string Location => MelonAssembly.Location;
 
         #endregion

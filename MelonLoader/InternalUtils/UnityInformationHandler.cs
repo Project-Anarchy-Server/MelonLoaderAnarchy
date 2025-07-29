@@ -7,9 +7,9 @@ using System.Text;
 using System.Text.RegularExpressions;
 using AssetsTools.NET;
 using AssetsTools.NET.Extra;
-using System.Drawing;
+using MelonLoader.Logging;
 using MelonLoader.Utils;
-using UnityVersion = AssetRipper.VersionUtilities.UnityVersion;
+using UnityVersion = AssetRipper.Primitives.UnityVersion;
 
 namespace MelonLoader.InternalUtils
 {
@@ -42,8 +42,8 @@ namespace MelonLoader.InternalUtils
         {
             string gameDataPath = MelonEnvironment.UnityGameDataDirectory;
 
-            if (!string.IsNullOrEmpty(MelonLaunchOptions.Core.UnityVersion))
-                EngineVersion = TryParse(MelonLaunchOptions.Core.UnityVersion);
+            if (!string.IsNullOrEmpty(LoaderConfig.Current.UnityEngine.VersionOverride))
+                EngineVersion = TryParse(LoaderConfig.Current.UnityEngine.VersionOverride);
 
             AssetsManager assetsManager = new AssetsManager();
             ReadGameInfo(assetsManager, gameDataPath);
@@ -63,12 +63,12 @@ namespace MelonLoader.InternalUtils
             if (string.IsNullOrEmpty(GameVersion))
                 GameVersion = DefaultInfo;
 
-            MelonLogger.WriteLine(Color.Magenta);
+            MelonLogger.WriteLine(ColorARGB.Magenta);
             MelonLogger.Msg($"Game Name: {GameName}");
             MelonLogger.Msg($"Game Developer: {GameDeveloper}");
             MelonLogger.Msg($"Unity Version: {EngineVersion}");
             MelonLogger.Msg($"Game Version: {GameVersion}");
-            MelonLogger.WriteLine(Color.Magenta);
+            MelonLogger.WriteLine(ColorARGB.Magenta);
             MelonLogger.WriteSpacer();
         }
 
@@ -121,6 +121,10 @@ namespace MelonLoader.InternalUtils
                         AssetTypeValueField productName = playerSettings_baseField.Get("productName");
                         if (productName != null)
                             GameName = productName.AsString;
+                    }
+                    else
+                    {
+                        MelonLogger.Warning("Unable to find PlayerSettings in globalgamemanagers. Possible out-dated classdata.tpk present. Using fallback method.");
                     }
                 }
             }

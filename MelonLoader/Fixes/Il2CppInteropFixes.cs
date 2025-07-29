@@ -13,8 +13,6 @@ using Il2CppInterop.Runtime.Runtime.VersionSpecific.Class;
 using Il2CppInterop.Runtime.Runtime.VersionSpecific.MethodInfo;
 using Il2CppInterop.Runtime.Runtime.VersionSpecific.Type;
 using HarmonyLib;
-using System.IO;
-using MelonLoader.Utils;
 using Il2CppInterop.Generator.Contexts;
 using AsmResolver.DotNet;
 using Il2CppInterop.HarmonySupport;
@@ -64,8 +62,6 @@ namespace MelonLoader.Fixes
         private static MethodInfo _rewriteGlobalContext_GetNewAssemblyForOriginal_Prefix;
         private static MethodInfo _rewriteGlobalContext_TryGetNewTypeForOriginal;
         private static MethodInfo _rewriteGlobalContext_TryGetNewTypeForOriginal_Prefix;
-        private static MethodInfo _reportException;
-        private static MethodInfo _reportException_Prefix;
 
         private static void LogMsg(string msg)
             => _logger.Msg(msg);
@@ -164,11 +160,6 @@ namespace MelonLoader.Fixes
                 if (_rewriteGlobalContext_TryGetNewTypeForOriginal == null)
                     throw new Exception("Failed to get RewriteGlobalContext.TryGetNewTypeForOriginal");
 
-                _reportException = detourMethodPatcherType.GetMethod("ReportException",
-                    BindingFlags.NonPublic | BindingFlags.Static);
-                if (_reportException == null)
-                    throw new Exception("Failed to get Il2CppDetourMethodPatcher.ReportException");
-
                 _fixedFindType = thisType.GetMethod(nameof(FixedFindType), BindingFlags.NonPublic | BindingFlags.Static);
                 _fixedAddTypeToLookup = thisType.GetMethod(nameof(FixedAddTypeToLookup), BindingFlags.NonPublic | BindingFlags.Static);
                 _fixedIsByRef = thisType.GetMethod(nameof(FixedIsByRef), BindingFlags.NonPublic | BindingFlags.Static);
@@ -184,7 +175,6 @@ namespace MelonLoader.Fixes
                 _rewriteGlobalContext_Dispose_Prefix = thisType.GetMethod(nameof(RewriteGlobalContext_Dispose_Prefix), BindingFlags.NonPublic | BindingFlags.Static);
                 _rewriteGlobalContext_GetNewAssemblyForOriginal_Prefix = thisType.GetMethod(nameof(RewriteGlobalContext_GetNewAssemblyForOriginal_Prefix), BindingFlags.NonPublic | BindingFlags.Static);
                 _rewriteGlobalContext_TryGetNewTypeForOriginal_Prefix = thisType.GetMethod(nameof(RewriteGlobalContext_TryGetNewTypeForOriginal_Prefix), BindingFlags.NonPublic | BindingFlags.Static);
-                _reportException_Prefix = thisType.GetMethod(nameof(ReportException_Prefix), BindingFlags.NonPublic | BindingFlags.Static);
 
                 LogDebugMsg("Patching Il2CppInterop ClassInjector.SystemTypeFromIl2CppType...");
                 Core.HarmonyInstance.Patch(_systemTypeFromIl2CppType,
@@ -233,10 +223,6 @@ namespace MelonLoader.Fixes
                 LogDebugMsg("Patching Il2CppInterop RewriteGlobalContext.TryGetNewTypeForOriginal...");
                 Core.HarmonyInstance.Patch(_rewriteGlobalContext_TryGetNewTypeForOriginal,
                     new HarmonyMethod(_rewriteGlobalContext_TryGetNewTypeForOriginal_Prefix));
-
-                LogDebugMsg("Patching Il2CppInterop Il2CppDetourMethodPatcher.ReportException...");
-                Core.HarmonyInstance.Patch(_reportException,
-                    new HarmonyMethod(_reportException_Prefix));
             }
             catch (Exception e)
             {
@@ -308,12 +294,6 @@ namespace MelonLoader.Fixes
             typePointer = IL2CPP.il2cpp_class_get_type(typePointer);
             if (typePointer !=  IntPtr.Zero)
                 _typeLookup.Add(typePointer, type);
-        }
-
-        private static bool ReportException_Prefix(Exception __0)
-        {
-            LogError("During invoking native->managed trampoline", __0);
-            return false;
         }
 
         private static bool EmitObjectToPointer_Prefix(bool __7, ref bool __8)
@@ -456,10 +436,6 @@ namespace MelonLoader.Fixes
             if (klass == IntPtr.Zero)
                 return true;
 
-            IntPtr image = IL2CPP.il2cpp_class_get_image(klass);
-            if (image == IntPtr.Zero)
-                return true;
-
             IntPtr klassNamespace = IL2CPP.il2cpp_class_get_namespace(klass);
             if (klassNamespace == IntPtr.Zero)
                 return true;
@@ -480,30 +456,24 @@ namespace MelonLoader.Fixes
                     fullTypeName = $"{klassNamespaceStr}.{klassNameStr}";
             }
 
-            IntPtr fileName = IL2CPP.il2cpp_image_get_filename(image);
-            if (fileName == IntPtr.Zero)
-                return true;
+            var assemblyName = "Il2Cpp" + Marshal.PtrToStringAnsi(IL2CPP.il2cpp_class_get_assemblyname(klass));
 
-            string fileNameStr = Marshal.PtrToStringAnsi(fileName);
-            if (string.IsNullOrEmpty(fileNameStr))
-                return true;
-
-            string il2cppAssemblyPath = Path.Combine(MelonEnvironment.Il2CppAssembliesDirectory, fileNameStr);
-            if (!File.Exists(il2cppAssemblyPath))
-                il2cppAssemblyPath = Path.Combine(MelonEnvironment.Il2CppAssembliesDirectory, $"Il2Cpp{fileNameStr}");
-            if (File.Exists(il2cppAssemblyPath))
+            Assembly asm;
+            try
             {
-                Assembly asm = Assembly.LoadFrom(il2cppAssemblyPath);
-                if (asm != null)
-                {
-                    __result = asm.GetType($"Il2Cpp.{fullTypeName}");
-                    if (__result == null)
-                        __result = asm.GetType($"Il2Cpp{fullTypeName}");
-                    if (__result == null)
-                        __result = asm.GetType(fullTypeName);
-                    if (__result != null)
-                        return false;
-                }
+                asm = Assembly.Load(assemblyName);
+            }
+            catch
+            {
+                MelonLogger.Warning($"SystemTypeFromIl2CppType fix failed to resolve assembly '{assemblyName}'");
+                return true;
+            }
+
+            __result = (asm.GetType($"Il2Cpp.{fullTypeName}") ?? asm.GetType($"Il2Cpp{fullTypeName}")) ?? asm.GetType(fullTypeName);
+            if (__result != null)
+            {
+                MelonDebug.Msg($"SystemTypeFromIl2CppType fix resolved type: {__result.AssemblyQualifiedName}");
+                return false;
             }
 
             return true;
