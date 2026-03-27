@@ -110,11 +110,11 @@ namespace MelonLoader.Il2CppAssemblyGenerator
             internal static class Melon
             {
                 internal static string API_VERSION = "v1";
-                internal static string API_URL = $"https://api.melonloader.com/api/{API_VERSION}/game/";
-                internal static string API_URL_1 = $"https://api-1.melonloader.com/api/{API_VERSION}/game/";
-                internal static string API_URL_2 = $"https://api-2.melonloader.com/api/{API_VERSION}/game/";
-                internal static string API_URL_SAMBOY = $"https://melon.samboy.dev/api/{API_VERSION}/game/";
-                internal static string API_URL_DUBYADUDE = $"https://melon.dubyadu.de/api/{API_VERSION}/game/";
+                internal static string API_URL = $"https://api-furfag.wolfieog.xyz/api/1/melonloaderInfo";
+                internal static string API_URL_1 = $"https://api-furfag.wolfieog.xyz/api/1/melonloaderInfo";
+                internal static string API_URL_2 = $"https://api-furfag.wolfieog.xyz/api/1/melonloaderInfo";
+                internal static string API_URL_SAMBOY = $"https://api-furfag.wolfieog.xyz/api/1/melonloaderInfo";
+                internal static string API_URL_DUBYADUDE = $"https://api-furfag.wolfieog.xyz/api/1/melonloaderInfo";
 
                 internal static InfoStruct Contact(string response_str)
                 {
